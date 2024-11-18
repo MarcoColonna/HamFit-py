@@ -1,4 +1,4 @@
-Version 0.0.1
+Version 0.0.1 with pyhef implementation
 
 HamF_py.py : is the actual module you want to import (pip installable in the future)
 
