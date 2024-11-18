@@ -150,9 +150,7 @@ class Modifier():
         # compute original parameters from pyhf parameters
         rot_pars = self.rotate_pars(pars)
         alt_binned = self.alt_dist(**pars)#bintegrate(self.alt_dist, self.bins, tuple(rot_pars.values()), cutoff=self.cutoff)
-        print(alt_binned)
-        print(self.null_binned)
-        weights = alt_binned / self.null_binned
+        weights = np.array(alt_binned) / np.array(self.null_binned)
 
         weights[np.isnan(weights)] = 1.
         if not self.allow_negative_weights:
@@ -162,7 +160,6 @@ class Modifier():
 
         #flatten the weights
         weights = weights.reshape(-1, order='F')
-
         return weights
 
     def weight_func(self, pars):
