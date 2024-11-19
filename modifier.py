@@ -178,8 +178,6 @@ class Modifier():
 
         weights = self.get_weights(pars)
         results = weights
-#        results = self.map @ weights
-#        results = results / self.nominal
 
         def func():
             return results
@@ -187,30 +185,6 @@ class Modifier():
         self.cache[key] = func
 
         return func
-
-def bintegrate(func, bins, args=(), cutoff=None):
-    """
-    Integrate function in given bins.
-
-    Args:
-        func (callable): Function to be integrated.
-        bins (array): Binning of the integration.
-        args (tuple, optional): Additional arguments for the function. Defaults to ().
-        cutoff (tuple, optional): Cutoff values for the integration. Defaults to None.
-
-    Returns:
-        _type_: _description_
-    """
-    cutoff = cutoff if cutoff else tuple((-np.inf, np.inf) for _ in bins)
-    ranges = [list(zip(b[:-1], b[1:])) for b in bins]
-    results = []
-    for limits in itertools.product(*ranges):
-        #enforce cutoff
-        if any(l[0] < c[0] or l[1] > c[1] for l, c in zip(limits, cutoff)):
-            results.append(np.nan)
-        else:
-            results.append(sp.integrate.nquad(func, limits, args=args)[0])
-    return np.reshape(results, tuple(len(b)-1 for b in bins)).T
 
 def _svd(cov, return_rot=False):
     """Singular value decomposition, moving to a space where the covariance matrix is diagonal
@@ -293,8 +267,6 @@ def save(file, spec, cmods, data=None):
         'spec'          : spec,
         'name'          : [cmod.name for cmod in cmods],
         'new_pars'      : [cmod.new_pars for cmod in cmods],
-        'map'           : [cmod.map.tolist() for cmod in cmods],
-        'bins'          : [cmod.bins if isinstance(cmod.bins,list) else cmod.bins.tolist() for cmod in cmods],
         'cutoff'        : [cmod.cutoff for cmod in cmods],
         'weight_bound'  : [cmod.weight_bound for cmod in cmods]
         }
@@ -326,8 +298,8 @@ def load(file, alt_dist, null_dist, return_modifier=False, return_data=False, **
     for pars in d['new_pars']:
         new_pars.update(_read_pars(pars))
     cmods = []
-    for name, map, bins, cutoff, weight_bound in zip(d['name'], d['map'], d['bins'], d['cutoff'], d['weight_bound']):
-        cmods.append(Modifier(new_pars, alt_dist, null_dist, map, bins,
+    for name, cutoff, weight_bound in zip(d['name'], d['cutoff'], d['weight_bound']):
+        cmods.append(Modifier(new_pars, alt_dist, null_dist,
                               name=name, cutoff=cutoff, weight_bound=weight_bound))
 
     expanded_pyhf = {}
@@ -400,20 +372,6 @@ def _read_pars(json_input):
         new_pars[k]['inits'] = tuple(v['inits'])
         new_pars[k]['bounds'] = tuple(tuple(w) for w in v['bounds'])
     return new_pars
-
-def map(target_samples, kinematic_samples, target_bins, kinematic_bins):
-    """
-    Generate mapping distribution from samples.
-
-    Args:
-        target_samples (array): Target (fitting variable) samples.
-        kinematic_samples (array): Kinematic samples.
-        target_bins (array): Target (fitting variable) binning.
-        kinematic_bins (array): Kinematic binning.
-    """
-    samples = [target_samples] + list(kinematic_samples)
-    binning = [target_bins] + list(kinematic_bins)
-    return np.histogramdd(samples, bins=binning)[0]
 
 def _flatten(xs):
     for x in xs:
