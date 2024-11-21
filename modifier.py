@@ -149,7 +149,7 @@ class Modifier():
         """
         # compute original parameters from pyhf parameters
         rot_pars = self.rotate_pars(pars)
-        alt_binned = self.alt_dist(**pars)#bintegrate(self.alt_dist, self.bins, tuple(rot_pars.values()), cutoff=self.cutoff)
+        alt_binned = self.alt_dist(**rot_pars)#bintegrate(self.alt_dist, self.bins, tuple(rot_pars.values()), cutoff=self.cutoff)
         weights = np.array(alt_binned) / np.array(self.null_binned)
 
         weights[np.isnan(weights)] = 1.
