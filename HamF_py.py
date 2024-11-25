@@ -19,30 +19,31 @@ from pathlib import Path
 # the next lines will be (luckily) outdated
 # just replace with:
 
-from hammer import hepmc, pdg
-from hammer.hammerlib import (FourMomentum, Hammer, IOBuffer,
-                              Particle, Process, RecordType)
+#from hammer import hepmc, pdg
+#from hammer.hammerlib import (FourMomentum, Hammer, IOBuffer,
+#                              Particle, Process, RecordType)
 
 
 
 # otherwise if you have hammer built in your personal workspace you can link the python interface as following
 
-#hammer_path = '/home/mcolonna/Hammer_1.3/Hammer-install/lib64/python3.10/site-packages/hammer'
+hammer_path = '/home/mcolonna/Hammer_1.3/Hammer-install/lib64/python3.10/site-packages/hammer'
 
-#spec = importlib.util.spec_from_file_location("hammer", f"{hammer_path}/__init__.py")
-#hammer = importlib.util.module_from_spec(spec)
-#sys.modules["hammer"] = hammer
-#spec.loader.exec_module(hammer)
 
-#hammerlib_path = f"{hammer_path}/hammerlib.so"
-#spec_hammerlib = importlib.util.spec_from_file_location("hammer.hammerlib", hammerlib_path)
-#hammerlib = importlib.util.module_from_spec(spec_hammerlib)
-#sys.modules["hammer.hammerlib"] = hammerlib
-#spec_hammerlib.loader.exec_module(hammerlib)
+spec = importlib.util.spec_from_file_location("hammer", f"{hammer_path}/__init__.py")
+hammer = importlib.util.module_from_spec(spec)
+sys.modules["hammer"] = hammer
+spec.loader.exec_module(hammer)
 
-#Hammer = hammerlib.Hammer
-#IOBuffer = hammerlib.IOBuffer
-#RecordType = hammerlib.RecordType
+hammerlib_path = f"{hammer_path}/hammerlib.so"
+spec_hammerlib = importlib.util.spec_from_file_location("hammer.hammerlib", hammerlib_path)
+hammerlib = importlib.util.module_from_spec(spec_hammerlib)
+sys.modules["hammer.hammerlib"] = hammerlib
+spec_hammerlib.loader.exec_module(hammerlib)
+
+Hammer = hammerlib.Hammer
+IOBuffer = hammerlib.IOBuffer
+RecordType = hammerlib.RecordType
 
 #######
 
@@ -152,8 +153,9 @@ class HammerCacher:
     
     def getHistoTotalSM(self):
         total = 0
-        wcs = {"SM" : 1.0}
-        self._ham.reset_wilson_coefficients(self._WilsonSet, wcs)
+        wcs = {"SM" : 1.0, "S_qLlL" : 0., "S_qRlL" : 0., "V_qLlL" : 0., "V_qRlL" : 0., "T_qLlL" : 0.0}
+        self._ham.reset_wilson_coefficients(self._WilsonSet)
+        self._ham.set_wilson_coefficients(self._WilsonSet, wcs)
         self._histo = self._ham.get_histogram(self._histoName, self._FFScheme)
         for ni in range(self._nobs):
             total += self._histo[ni].sum_wi
@@ -426,7 +428,7 @@ class template:
         self._name = name
         self._wrap = wrap
         self._nobs = wrap._nobs
-        self._nwcs = 2*len(self._wrap._wcs)-1
+        self._nwcs = len(self._wrap._wcs)
         self._nFFs = len(self._wrap._FFs)
         self._nparams = len(self._wrap._params)
         self._strides = wrap._strides
@@ -438,13 +440,12 @@ class template:
         params = {}
 
         for i, (key, value) in enumerate(kwargs.items()):
-            if i < self._nwcs:
+            if i < self._nwcs*2-1:
                 wcs[key] = value
-            elif self._nwcs <= i < self._nwcs+self._nFFs:
+            elif self._nwcs*2-1 <= i < self._nwcs*2-1+self._nFFs:
                 FFs[key] = value
             else:
                 params[key] = value
-        
         self._wrap.set_wcs(wcs)
         self._wrap.set_FFs(FFs)
         self._wrap.set_params(params)
@@ -464,13 +465,12 @@ class template:
         params = {}
 
         for i, (key, value) in enumerate(kwargs.items()):
-            if i < self._nwcs:
+            if i < self._nwcs*2-1:
                 wcs[key] = value
-            elif self._nwcs <= i < self._nwcs+self._nFFs:
+            elif self._nwcs*2-1 <= i < self._nwcs*2-1+self._nFFs:
                 FFs[key] = value
             else:
                 params[key] = value
-        
         self._wrap.set_wcs(wcs)
         self._wrap.set_FFs(FFs)
         self._wrap.set_params(params)
@@ -625,9 +625,10 @@ class Reader:
             nuisance = ast.literal_eval(self.config[mode]["nuisance"])
             is_hammer_weighted = ast.literal_eval(self.config[mode]["ishammerweighted"])
             histo_infos = histo_info(ast.literal_eval(self.config[mode]["axistitles"]), ast.literal_eval(self.config[mode]["binning"]))
+            _wilsoncoefficients = {"SM":wilsoncoefficients[list(wilsoncoefficients.keys())[0]],"S_qLlL": complex(wilsoncoefficients[list(wilsoncoefficients.keys())[1]], wilsoncoefficients[list(wilsoncoefficients.keys())[2]]),"S_qRlL": complex(wilsoncoefficients[list(wilsoncoefficients.keys())[3]], wilsoncoefficients[list(wilsoncoefficients.keys())[4]]),"V_qLlL": complex(wilsoncoefficients[list(wilsoncoefficients.keys())[5]], wilsoncoefficients[list(wilsoncoefficients.keys())[6]]),"V_qRlL": complex(wilsoncoefficients[list(wilsoncoefficients.keys())[7]], wilsoncoefficients[list(wilsoncoefficients.keys())[8]]),"T_qLlL": complex(wilsoncoefficients[list(wilsoncoefficients.keys())[9]], wilsoncoefficients[list(wilsoncoefficients.keys())[10]])}
             if is_hammer_weighted:
                 for fileName in fileNames:
-                    hac_list.append(HammerCacher(fileName, histoname, ffscheme, wcscheme, formfactors, wilsoncoefficients, scalefactor, histo_infos))
+                    hac_list.append(HammerCacher(fileName, histoname, ffscheme, wcscheme, formfactors, _wilsoncoefficients, scalefactor, histo_infos))
                 cacher = MultiHammerCacher(hac_list)
                 if wcscheme == "BtoCTauNu":
                     wrapper = HammerNuisWrapper(cacher, **nuisance)
@@ -650,7 +651,6 @@ class Reader:
                 template_list.append(temp)
                 toy_parameters = nuisance
                 toy_list.append(temp.generate_toy(**toy_parameters))
-
 
         toy_tot = np.zeros(len(toy_list[0]))
         for toy in toy_list:
