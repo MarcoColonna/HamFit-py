@@ -19,31 +19,31 @@ from pathlib import Path
 # the next lines will be (luckily) outdated
 # just replace with:
 
-#from hammer import hepmc, pdg
-#from hammer.hammerlib import (FourMomentum, Hammer, IOBuffer,
-#                              Particle, Process, RecordType)
+from hammer import hepmc, pdg
+from hammer.hammerlib import (FourMomentum, Hammer, IOBuffer,
+                              Particle, Process, RecordType)
 
 
 
 # otherwise if you have hammer built in your personal workspace you can link the python interface as following
 
-hammer_path = '/home/mcolonna/Hammer_1.3/Hammer-install/lib64/python3.10/site-packages/hammer'
+#hammer_path = '/home/mcolonna/Hammer_1.3/Hammer-install/lib64/python3.10/site-packages/hammer'
 
 
-spec = importlib.util.spec_from_file_location("hammer", f"{hammer_path}/__init__.py")
-hammer = importlib.util.module_from_spec(spec)
-sys.modules["hammer"] = hammer
-spec.loader.exec_module(hammer)
+#spec = importlib.util.spec_from_file_location("hammer", f"{hammer_path}/__init__.py")
+#hammer = importlib.util.module_from_spec(spec)
+#sys.modules["hammer"] = hammer
+#spec.loader.exec_module(hammer)
 
-hammerlib_path = f"{hammer_path}/hammerlib.so"
-spec_hammerlib = importlib.util.spec_from_file_location("hammer.hammerlib", hammerlib_path)
-hammerlib = importlib.util.module_from_spec(spec_hammerlib)
-sys.modules["hammer.hammerlib"] = hammerlib
-spec_hammerlib.loader.exec_module(hammerlib)
+#hammerlib_path = f"{hammer_path}/hammerlib.so"
+#spec_hammerlib = importlib.util.spec_from_file_location("hammer.hammerlib", hammerlib_path)
+#hammerlib = importlib.util.module_from_spec(spec_hammerlib)
+#sys.modules["hammer.hammerlib"] = hammerlib
+#spec_hammerlib.loader.exec_module(hammerlib)
 
-Hammer = hammerlib.Hammer
-IOBuffer = hammerlib.IOBuffer
-RecordType = hammerlib.RecordType
+#Hammer = hammerlib.Hammer
+#IOBuffer = hammerlib.IOBuffer
+#RecordType = hammerlib.RecordType
 
 #######
 
